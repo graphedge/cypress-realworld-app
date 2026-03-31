@@ -1,5 +1,6 @@
 ---
 description: Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts.
+model: claude-haiku-4.5
 handoffs: 
   - label: Analyze For Consistency
     agent: speckit.analyze
@@ -11,6 +12,17 @@ handoffs:
     send: true
 ---
 
+## Temporary Branch Cleanup
+
+- Identify all local and remote branches matching patterns: `feature/*`, `temp/*`, `wip/*`, or older than 14 days and not merged to main branches (e.g., `phase-3B`, `main`).
+- For each candidate branch:
+  - Check for unmerged commits; if found, prompt user for confirmation before deletion.
+  - Delete local branches with `git branch -d <branch>` (or `-D` if forced).
+  - Delete remote branches with `git push origin --delete <branch>`.
+- Log all actions to `.specfarm/error-memory.md` for audit.
+- Always prompt for user confirmation before deleting any branch.
+
+
 ## User Input
 
 ```text
@@ -18,40 +30,6 @@ $ARGUMENTS
 ```
 
 You **MUST** consider the user input before proceeding (if not empty).
-
-## Pre-Execution Checks
-
-**Check for extension hooks (before tasks generation)**:
-- Check if `.specify/extensions.yml` exists in the project root.
-- If it exists, read it and look for entries under the `hooks.before_tasks` key
-- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
-- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
-- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
-  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
-  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
-- For each executable hook, output the following based on its `optional` flag:
-  - **Optional hook** (`optional: true`):
-    ```
-    ## Extension Hooks
-
-    **Optional Pre-Hook**: {extension}
-    Command: `/{command}`
-    Description: {description}
-
-    Prompt: {prompt}
-    To execute: `/{command}`
-    ```
-  - **Mandatory hook** (`optional: false`):
-    ```
-    ## Extension Hooks
-
-    **Automatic Pre-Hook**: {extension}
-    Executing: `/{command}`
-    EXECUTE_COMMAND: {command}
-    
-    Wait for the result of the hook command before proceeding to the Outline.
-    ```
-- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
 ## Outline
 
@@ -93,35 +71,6 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Independent test criteria for each story
    - Suggested MVP scope (typically just User Story 1)
    - Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
-
-6. **Check for extension hooks**: After tasks.md is generated, check if `.specify/extensions.yml` exists in the project root.
-   - If it exists, read it and look for entries under the `hooks.after_tasks` key
-   - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
-   - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
-   - For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
-     - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
-     - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
-   - For each executable hook, output the following based on its `optional` flag:
-     - **Optional hook** (`optional: true`):
-       ```
-       ## Extension Hooks
-
-       **Optional Hook**: {extension}
-       Command: `/{command}`
-       Description: {description}
-
-       Prompt: {prompt}
-       To execute: `/{command}`
-       ```
-     - **Mandatory hook** (`optional: false`):
-       ```
-       ## Extension Hooks
-
-       **Automatic Hook**: {extension}
-       Executing: `/{command}`
-       EXECUTE_COMMAND: {command}
-       ```
-   - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
 Context for task generation: $ARGUMENTS
 

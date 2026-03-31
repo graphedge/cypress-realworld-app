@@ -1,5 +1,6 @@
 ---
-description: Create or update the project constitution from interactive or provided principle inputs, ensuring all dependent templates stay in sync.
+description: Create or update the project constitution (v0.2.0+) from interactive or provided principle inputs, ensuring all dependent templates stay in sync.
+model: claude-haiku-4.5
 handoffs: 
   - label: Build Specification
     agent: speckit.specify
