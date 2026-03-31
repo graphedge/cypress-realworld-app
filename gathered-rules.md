@@ -1,6 +1,6 @@
 # Rules Gathering Report — cypress-realworld-app
 
-**Generated**: 2026-03-31T23:00:55Z
+**Generated**: 2026-03-31T23:22:11Z
 **Repository**: /home/brett/projects/cypress-realworld-app
 **Commit Range**: HEAD~10..HEAD
 **Maximum Rules**: 20
@@ -28,18 +28,18 @@
   
   [0;32m===[0m [0;34mAnalyzing Changed Files[0m [0;32m===[0m
     [0;32m[✓][0m Analyzed 30 changed files
-  .specfarm/CODE-STYLE-AUDIT.md
-  .specfarm/RESTRUCTURING-COMPLETE.md
-  .specfarm/agents/AGENT-EVAL-REPORT.md
-  .specfarm/agents/MODS-APPLIED.md
-  .specfarm/agents/gather-rules-agent-caller.sh
-  .specfarm/agents/gather-rules-agent.sh
-  .specfarm/agents/intake-agent.md
-  .specfarm/agents/repo-mix-fallback.ps1
-  .specfarm/agents/repo-mix-fallback.sh
-  .specfarm/agents/rules-filter.md
-  .specfarm/agents/rules-filter.md.backup
-  .specfarm/agents/todo-improve-rule-coverage.md
+  .specfarm.backup.20260331185634/CODE-STYLE-AUDIT.md
+  .specfarm.backup.20260331185634/RESTRUCTURING-COMPLETE.md
+  .specfarm.backup.20260331185634/agents/AGENT-EVAL-REPORT.md
+  .specfarm.backup.20260331185634/agents/MODS-APPLIED.md
+  .specfarm.backup.20260331185634/agents/gather-rules-agent-caller.sh
+  .specfarm.backup.20260331185634/agents/gather-rules-agent.sh
+  .specfarm.backup.20260331185634/agents/intake-agent.md
+  .specfarm.backup.20260331185634/agents/repo-mix-fallback.ps1
+  .specfarm.backup.20260331185634/agents/repo-mix-fallback.sh
+  .specfarm.backup.20260331185634/agents/rules-filter.md
+  .specfarm.backup.20260331185634/agents/rules-filter.md.backup
+  .specfarm.backup.20260331185634/agents/todo-improve-rule-coverage.md
 ```
 
 #### Test Files Found
@@ -64,7 +64,7 @@
   /home/brett/projects/cypress-realworld-app/.specfarm/templates/payroll/plan.md
   /home/brett/projects/cypress-realworld-app/.specfarm/templates/api/spec.md
   /home/brett/projects/cypress-realworld-app/.specfarm/templates/api/plan.md
-  /home/brett/projects/cypress-realworld-app/.specfarm/templates.backup.20260331185634/service/spec.md
+  /home/brett/projects/cypress-realworld-app/.specfarm/specs/011-test-1st-customer-repo/spec.md
 
 #### Rule Candidates Extracted
 ```
@@ -134,7 +134,7 @@ Add generated rules to your project's `rules.xml` file (or equivalent).
 ## Report Metadata
 
 - **Scan Date**: 2026-03-31
-- **Scan Time**: 23:00:56 UTC
+- **Scan Time**: 23:22:12 UTC
 - **Report File**: /home/brett/projects/cypress-realworld-app/gathered-rules.md
 - **Schema File**: /home/brett/projects/cypress-realworld-app/rules-schema.xsd
 
