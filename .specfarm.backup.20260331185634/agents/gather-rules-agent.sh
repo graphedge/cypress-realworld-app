@@ -16,29 +16,19 @@
 #   -p, --prefix PREFIX          Rule ID prefix (default: auto-detect or 'rule')
 #   --scan-dirs DIRS             Directories to scan (comma-separated, default: auto-detect)
 #   --exclude-dirs DIRS          Directories to exclude (comma-separated)
-#   --task-context DESC          Task context mode: generate compact rule context for task
-#   --scan-tests                 Exhaustive test scan (remove 20-file limit)
-#   --size tiny|default          Output size: tiny (~100 tokens), default (~200 tokens)
 #   --audit-duplicates           Scan rules.xml for similar/duplicate rules and suggest merges
-#   --dup-threshold NUM          Similarity threshold % for duplication flag (default: 60)
+#   --dup-threshold NUM          Similarity threshold % for duplication flag (default: 40)
 #   -h, --help                   Show this help message
-#
-# Environment Variables:
-#   RULES_XML_PATH              Override rules.xml path (default: .specfarm/rules.xml)
-#   XMLLINT_CMD                 Override xmllint path (default: xmllint)
 #
 # Examples:
 #   # Scan last 20 commits in current repo
 #   ./gather-rules-agent.sh
 #
-#   # Task-context mode: get rules for a specific task
-#   ./gather-rules-agent.sh --task-context "Fix bash arithmetic in test_drift.sh"
+#   # Scan specific commit range with custom output
+#   ./gather-rules-agent.sh -c "abc123..def456" -o /tmp/new-rules.md
 #
-#   # Exhaustive test scan with tiny output
-#   ./gather-rules-agent.sh --scan-tests --size tiny
-#
-#   # Use in different repo with custom rules.xml path
-#   RULES_XML_PATH=/custom/path/rules.xml ./gather-rules-agent.sh --task-context "..."
+#   # Use in different repo with custom schema
+#   ./gather-rules-agent.sh -r /path/to/repo -s /path/to/schema.xsd -p "custom"
 
 set -euo pipefail
 
@@ -55,15 +45,10 @@ RULE_PREFIX=""
 SCAN_DIRS=""
 EXCLUDE_DIRS="third-party,build,config,.github,node_modules,venv,__pycache__,.git,.specfarm"
 
-# Rules XML configuration (FR-010 fix)
-RULES_XML_PATH="${RULES_XML_PATH:-.specfarm/rules.xml}"
-XMLLINT_CMD="${XMLLINT_CMD:-xmllint}"
-
 # New Task-Context Mode variables
 TASK_CONTEXT_MODE=false
 TASK_CONTEXT_DESC=""
 SIZE_MODE="default"
-SCAN_TESTS_MODE=false  # FR-011: --scan-tests flag
 
 # Duplicate audit mode
 AUDIT_DUPLICATES_MODE=false
@@ -130,10 +115,6 @@ parse_args() {
                 TASK_CONTEXT_DESC="$2"
                 shift 2
                 ;;
-            --scan-tests)
-                SCAN_TESTS_MODE=true
-                shift
-                ;;
             --audit-duplicates)
                 AUDIT_DUPLICATES_MODE=true
                 shift
@@ -198,42 +179,6 @@ validate_args() {
         log_error "Missing task description for --task-context."
         exit 1
     fi
-    
-    # Validate task context size mode
-    if [[ -n "$SIZE_MODE" ]] && [[ "$SIZE_MODE" != "default" ]] && [[ "$SIZE_MODE" != "tiny" ]]; then
-        log_error "Invalid size mode: $SIZE_MODE (must be 'default' or 'tiny')"
-        exit 1
-    fi
-}
-
-# FR-010: Validate prerequisites (xmllint, rules.xml availability)
-validate_prerequisites() {
-    # Check xmllint availability
-    if ! command -v "$XMLLINT_CMD" &> /dev/null; then
-        log_error "xmllint not found. Please install libxml2 or set XMLLINT_CMD environment variable."
-        return 1
-    fi
-    
-    # Check rules.xml file exists
-    if [[ ! -f "$RULES_XML_PATH" ]]; then
-        log_error "rules.xml not found at: $RULES_XML_PATH"
-        log_error "Set RULES_XML_PATH environment variable to override default location."
-        return 1
-    fi
-    
-    # Verify rules.xml is readable
-    if [[ ! -r "$RULES_XML_PATH" ]]; then
-        log_error "rules.xml is not readable: $RULES_XML_PATH"
-        return 1
-    fi
-    
-    # Validate rules.xml structure (parse as XML)
-    if ! "$XMLLINT_CMD" --noout "$RULES_XML_PATH" 2>/dev/null; then
-        log_error "rules.xml is malformed or corrupted: $RULES_XML_PATH"
-        return 1
-    fi
-    
-    return 0
 }
 
 # ============================================================================
@@ -258,97 +203,6 @@ log_warn() {
 
 log_error() {
     echo -e "  ${RED}[✗]${NC} $1" >&2
-}
-
-# ============================================================================
-# Cache Management (T038) - Commit cache for rule discovery
-# ============================================================================
-
-# Cache directory and file (under repository root)
-CACHE_DIR="${REPO_ROOT}/.specfarm/.rule-cache"
-CACHE_FILE="${CACHE_DIR}/commits.log"
-
-ensure_cache_dir() {
-    mkdir -p "$CACHE_DIR"
-}
-
-get_rules_mtime() {
-    if [[ -f "$RULES_XML_PATH" ]]; then
-        stat -c %Y "$RULES_XML_PATH" 2>/dev/null || echo 0
-    else
-        echo 0
-    fi
-}
-
-load_cache_meta() {
-    stored_rules_mtime=""
-    last_cached_sha=""
-    if [[ -f "$CACHE_FILE" ]]; then
-        stored_rules_mtime=$(grep '^rules_mtime=' "$CACHE_FILE" 2>/dev/null | head -n1 | cut -d'=' -f2 || echo "")
-        last_cached_sha=$(grep '^last_cached_sha=' "$CACHE_FILE" 2>/dev/null | head -n1 | cut -d'=' -f2 || echo "")
-    fi
-}
-
-invalidate_cache_if_rules_changed() {
-    local curr
-    curr=$(get_rules_mtime)
-    if [[ -n "$stored_rules_mtime" && "$stored_rules_mtime" != "$curr" ]]; then
-        log_info "Invalidating commit cache: rules.xml mtime changed ($stored_rules_mtime -> $curr)"
-        rm -f "$CACHE_FILE" || true
-        stored_rules_mtime=""
-        last_cached_sha=""
-    fi
-}
-
-update_commit_cache() {
-    ensure_cache_dir
-    local curr_mtime
-    curr_mtime=$(get_rules_mtime)
-
-    if [[ ! -f "$CACHE_FILE" ]]; then
-        local head_sha
-        head_sha=$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)
-        echo "last_cached_sha=$head_sha" > "$CACHE_FILE"
-        echo "rules_mtime=$curr_mtime" >> "$CACHE_FILE"
-        log_info "Created commit cache (last_cached_sha=$head_sha)"
-        return 0
-    fi
-
-    load_cache_meta
-    invalidate_cache_if_rules_changed
-
-    if [[ -z "$last_cached_sha" ]]; then
-        local head_sha
-        head_sha=$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)
-        echo "last_cached_sha=$head_sha" > "$CACHE_FILE"
-        echo "rules_mtime=$curr_mtime" >> "$CACHE_FILE"
-        log_info "Re-created commit cache (last_cached_sha=$head_sha)"
-        return 0
-    fi
-
-    local new_commits
-    if git -C "$REPO_ROOT" rev-parse "$last_cached_sha" >/dev/null 2>&1; then
-        new_commits=$(git -C "$REPO_ROOT" rev-list --reverse ${last_cached_sha}..HEAD 2>/dev/null || true)
-    else
-        new_commits=$(git -C "$REPO_ROOT" rev-list --reverse HEAD 2>/dev/null || true)
-    fi
-
-    if [[ -z "$new_commits" ]]; then
-        log_info "No new commits to append to cache (last_cached_sha=$last_cached_sha)"
-        return 0
-    fi
-
-    for sha in $new_commits; do
-        echo "$sha $(date +%s)" >> "$CACHE_FILE"
-    done
-    sed -i "s/^last_cached_sha=.*/last_cached_sha=$(git -C \"$REPO_ROOT\" rev-parse HEAD)/" "$CACHE_FILE" || true
-    log_info "Appended $(echo "$new_commits" | wc -w) commits to cache"
-}
-
-init_commit_cache_if_needed() {
-    if [[ "$TASK_CONTEXT_MODE" == "true" || "$SCAN_TESTS_MODE" == "true" ]]; then
-        update_commit_cache
-    fi
 }
 
 # ============================================================================
@@ -826,32 +680,17 @@ find_test_files() {
     
     local exclude_pattern=$(echo "$EXCLUDE_DIRS" | sed 's/,/|/g')
     
-    # FR-012: Remove head -20 limit when SCAN_TESTS_MODE is true
-    local head_limit=20
-    if [[ "$SCAN_TESTS_MODE" == "true" ]]; then
-        head_limit=""  # No limit for exhaustive scan
-    fi
-    
-    # Find test files in various patterns (FR-011: multi-directory scan)
+    # Find test files in various patterns
     local tests=$(find "${REPO_ROOT}" \
         -type f \
         \( -name "*test*.sh" -o -name "*test*.py" -o -name "*.test.js" -o -name "*.spec.ts" \) \
         ! -path "*/.git/*" \
         ! -path "*/node_modules/*" \
         ! -path "*/venv/*" \
-        2>/dev/null)
-    
-    # Apply limit only if not in exhaustive mode
-    if [[ -n "$head_limit" ]]; then
-        tests=$(echo "$tests" | head -"$head_limit")
-    fi
+        2>/dev/null | head -20)
     
     local count=$(echo "$tests" | wc -l)
-    if [[ "$SCAN_TESTS_MODE" == "true" ]]; then
-        log_done "Found ${count} test files (exhaustive scan)"
-    else
-        log_done "Found ${count} test files (limited to $head_limit)"
-    fi
+    log_done "Found ${count} test files"
     
     echo "$tests"
 }
@@ -1270,11 +1109,6 @@ BANNER
     # Parse arguments
     parse_args "$@"
     validate_args
-    
-    # FR-010: Validate prerequisites before any mode execution
-    if ! validate_prerequisites; then
-        exit 1
-    fi
 
     # Audit-duplicates mode: scan rules.xml and report similar rule pairs
     if [[ "$AUDIT_DUPLICATES_MODE" == "true" ]]; then
@@ -1323,44 +1157,14 @@ BANNER
     
     # Validate environment
     validate_environment || exit 1
-
-    # T037: Auto-default --scan-tests when rule_count < param * test_count
-    # Parameter SCAN_TESTS_PARAM controls aggressiveness (default: 1)
-    SCAN_TESTS_PARAM="${SCAN_TESTS_PARAM:-1}"
-    if [[ "$SCAN_TESTS_MODE" != "true" ]]; then
-        # Compute rules count (using xmllint if available)
-        local rules_count=0
-        if [[ -f "$RULES_XML_PATH" && -n "${XMLLINT_CMD:-}" ]]; then
-            if command -v "$XMLLINT_CMD" &>/dev/null; then
-                rules_count=$("$XMLLINT_CMD" --xpath "count(//*[local-name()='rule'])" "$RULES_XML_PATH" 2>/dev/null || echo 0)
-                # xmllint may return a floating point - normalize to integer
-                rules_count=$(printf "%d" "$rules_count" 2>/dev/null || echo "$rules_count" | cut -d'.' -f1)
-            fi
-        fi
-
-        # Compute test file count (use same find patterns as find_test_files)
-        local test_count
-        test_count=$(find "${REPO_ROOT}" -type f \( -name "*test*.sh" -o -name "*test*.py" -o -name "*.test.js" -o -name "*.spec.ts" \) \
-            ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/venv/*" 2>/dev/null | wc -l | tr -d ' ') || test_count=0
-
-        if [[ -z "$test_count" ]]; then
-            test_count=0
-        fi
-
-        if [[ "$rules_count" -lt $(( SCAN_TESTS_PARAM * test_count )) ]]; then
-            SCAN_TESTS_MODE=true
-            log_info "Auto-enabled --scan-tests (rules: ${rules_count} < param(${SCAN_TESTS_PARAM}) × tests: ${test_count})"
-        fi
-    fi
-
+    
     # Run analysis pipeline
-    init_commit_cache_if_needed
     scan_recent_commits
     extract_changed_files > /dev/null  # Just collect
     find_test_files > /dev/null
     find_spec_files > /dev/null
     extract_rule_candidates > /dev/null
-
+    
     # Generate report
     generate_markdown_report
     
