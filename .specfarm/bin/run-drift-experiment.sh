@@ -1,14 +1,49 @@
 #!/bin/bash
-# Orchestrate all 15 drift testing runs (3 arms × 5 runs each)
+#
+# run-drift-experiment.sh — Orchestrate all 15 Constitutional Drift Testing runs
+#
+# PURPOSE:
+#   Coordinates execution of all 15 experiment runs across 3 arms (baseline, control, treatment)
+#   with 5 runs each. Supports sequential or parallel execution with automatic progress tracking.
+#
+# USAGE:
+#   run-drift-experiment.sh [OPTIONS]
+#
+# OPTIONS:
+#   --sequential    Execute all 15 runs serially (default behavior)
+#   --parallel N    Run N concurrent jobs (e.g., --parallel 3 for 3 parallel runs)
+#   --dry-run       Show execution plan without running
+#   --help          Display this help message
+#
+# EXAMPLES:
+#   # Sequential execution (slowest, most stable)
+#   ./run-drift-experiment.sh --sequential
+#
+#   # Parallel execution (3 concurrent)
+#   ./run-drift-experiment.sh --parallel 3
+#
+#   # Dry-run to plan
+#   ./run-drift-experiment.sh --dry-run
+#
+# OUTPUT:
+#   Creates artifacts in: artifacts/drift-testing/{baseline,control,treatment}/run-{001..005}/
+#   Each run contains: run-report.json, logs.txt, gathered-rules.md, git-ref.txt
+#
+# EXIT CODES:
+#   0 - All runs completed successfully
+#   1 - One or more runs failed
+#
+
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SINGLE_RUN="$REPO_ROOT/.specfarm/bin/run-single-drift-run.sh"
 
-ARMS=("baseline" "control" "treatment")
-PARALLELISM=1
-DRY_RUN=false
-SEQUENTIAL=false
+# Configuration
+ARMS=("baseline" "control" "treatment")  # Experiment arms (treatment variable)
+PARALLELISM=1                            # Default: 1 job at a time (serial)
+DRY_RUN=false                            # Show plan without executing
+SEQUENTIAL=false                         # Sequential mode flag
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
