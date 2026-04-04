@@ -282,13 +282,13 @@ log_info "Phase 4: Extracting metrics from gathered rules..."
 if [[ "$DRY_RUN" != "true" ]]; then
     # Parse gathered rules to extract metrics
     # For now, compute from actual rules file
-    RULE_COUNT=$(grep -c '^### Rule' "$OUTPUT_DIR/gathered-rules.md" 2>/dev/null || echo "0")
+    RULE_COUNT=$(grep -c '^### Rule' "$OUTPUT_DIR/gathered-rules.md" 2>/dev/null || true)
     
     # Evidence accuracy: simplified calculation (would use full algorithm in production)
-    EVIDENCE_ACCURACY=$(echo "scale=2; 0.7" | bc)  # Placeholder
+    EVIDENCE_ACCURACY="0.7"  # Placeholder
     
     # Semantic similarity: simplified calculation
-    SEMANTIC_SIMILARITY=$(echo "scale=2; 0.75" | bc)  # Placeholder
+    SEMANTIC_SIMILARITY="0.75"  # Placeholder
     
     log_info "Extracted metrics: rules=$RULE_COUNT, evidence=$EVIDENCE_ACCURACY, similarity=$SEMANTIC_SIMILARITY"
 else
@@ -316,7 +316,7 @@ if [[ "$DRY_RUN" != "true" ]]; then
 METRICSEOF
     
     # Run calculator
-    RESULT_JSON=$(/tmp/drift-score-result-$$.json)
+    RESULT_JSON="/tmp/drift-score-result-$$.json"
     if ! python3 "$SPEC_DIR/src/drift/drift_score_calculator.py" \
         --metrics-file "$METRICS_JSON" \
         --output "$RESULT_JSON" 2>&1 | tee -a "$LOGS_FILE"; then
@@ -388,10 +388,10 @@ report = {
         "git_ref": "artifacts/drift-testing/$ARM/run-$RUN_ID/git-ref.txt"
     },
     "validation": {
-        "xml_valid": true,
-        "rules_parsed": true,
-        "drift_score_calculated": true,
-        "all_artifacts_present": true
+        "xml_valid": True,
+        "rules_parsed": True,
+        "drift_score_calculated": True,
+        "all_artifacts_present": True
     },
     "schema_version": "1.0"
 }

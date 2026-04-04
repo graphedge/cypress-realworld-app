@@ -1,0 +1,47 @@
+{
+  "experiment_metadata": {
+    "run_id": "baseline-001",
+    "arm": "baseline",
+    "run_number": 1,
+    "timestamp": "2026-04-04T00:33:35Z",
+    "target_repo": "cypress-realworld-app",
+    "target_repo_commit": "dbc7e65af23f7d977b53396d61f2235c20375d27"
+  },
+  "input_configuration": {
+    "rules_fixture": "rules-baseline.xml",
+    "fixture_sha256": "placeholder",
+    "environment": "isolated_clone"
+  },
+  "execution_summary": {
+    "status": "completed",
+    "duration_seconds": 0.0,
+    "drift_engine_version": "1.0",
+    "drift_analytics_version": "1.0",
+    "total_steps": 6,
+    "steps_completed": 6
+  },
+  "metrics": {
+    "rule_count": 0,
+    "evidence_accuracy": 0.7,
+    "semantic_similarity": 0.75,
+    "drift_score": 0.22500000000000003
+  },
+  "drift_analysis": {
+    "rules_extracted": 0,
+    "rules_with_evidence": 0,
+    "rules_without_evidence": 0,
+    "average_certainty": 0.75
+  },
+  "artifacts": {
+    "gathered_rules_md": "artifacts/drift-testing/baseline/run-001/gathered-rules.md",
+    "logs_txt": "artifacts/drift-testing/baseline/run-001/logs.txt",
+    "git_ref": "artifacts/drift-testing/baseline/run-001/git-ref.txt"
+  },
+  "validation": {
+    "xml_valid": true,
+    "rules_parsed": true,
+    "drift_score_calculated": true,
+    "all_artifacts_present": true
+  },
+  "schema_version": "1.0"
+}

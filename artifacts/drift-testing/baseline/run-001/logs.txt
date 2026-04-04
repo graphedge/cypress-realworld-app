@@ -1,0 +1,35 @@
+Cloning into '/tmp/drift-experiment-baseline-001-8159'...
+warning: --depth is ignored in local clones; use file:// instead.
+done.
+2026-04-04 00:32:05,356 [INFO] Results written to /tmp/drift-score-result-8159.json
+2026-04-04 00:32:05,356 [INFO] DriftScore: 0.2250
+Cloning into '/tmp/drift-experiment-baseline-001-8228'...
+warning: --depth is ignored in local clones; use file:// instead.
+done.
+2026-04-04 00:32:13,231 [INFO] Results written to /tmp/drift-score-result-8228.json
+2026-04-04 00:32:13,231 [INFO] DriftScore: 0.2250
+Cloning into '/tmp/drift-experiment-baseline-001-8297'...
+warning: --depth is ignored in local clones; use file:// instead.
+done.
+2026-04-04 00:32:18,872 [INFO] Results written to /tmp/drift-score-result-8297.json
+2026-04-04 00:32:18,872 [INFO] DriftScore: 0.2250
+Cloning into '/tmp/drift-experiment-baseline-001-8433'...
+warning: --depth is ignored in local clones; use file:// instead.
+done.
+2026-04-04 00:32:34,915 [INFO] Results written to /tmp/drift-score-result-8433.json
+2026-04-04 00:32:34,916 [INFO] DriftScore: 0.2250
+Cloning into '/tmp/drift-experiment-baseline-001-8500'...
+warning: --depth is ignored in local clones; use file:// instead.
+done.
+2026-04-04 00:32:40,815 [INFO] Results written to /tmp/drift-score-result-8500.json
+2026-04-04 00:32:40,815 [INFO] DriftScore: 0.2250
+Cloning into '/tmp/drift-experiment-baseline-001-8584'...
+warning: --depth is ignored in local clones; use file:// instead.
+done.
+2026-04-04 00:33:23,823 [INFO] Results written to /tmp/drift-score-result-8584.json
+2026-04-04 00:33:23,823 [INFO] DriftScore: 0.2250
+Cloning into '/tmp/drift-experiment-baseline-001-8654'...
+warning: --depth is ignored in local clones; use file:// instead.
+done.
+2026-04-04 00:33:35,557 [INFO] Results written to /tmp/drift-score-result-8654.json
+2026-04-04 00:33:35,557 [INFO] DriftScore: 0.2250

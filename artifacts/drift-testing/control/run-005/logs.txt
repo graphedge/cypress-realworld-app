@@ -1,0 +1,5 @@
+Cloning into '/tmp/drift-experiment-control-005-9186'...
+warning: --depth is ignored in local clones; use file:// instead.
+done.
+2026-04-04 00:33:40,255 [INFO] Results written to /tmp/drift-score-result-9186.json
+2026-04-04 00:33:40,255 [INFO] DriftScore: 0.2250

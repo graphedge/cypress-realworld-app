@@ -1,0 +1,10 @@
+Cloning into '/tmp/drift-experiment-baseline-002-8365'...
+warning: --depth is ignored in local clones; use file:// instead.
+done.
+2026-04-04 00:32:29,674 [INFO] Results written to /tmp/drift-score-result-8365.json
+2026-04-04 00:32:29,674 [INFO] DriftScore: 0.2250
+Cloning into '/tmp/drift-experiment-baseline-002-8701'...
+warning: --depth is ignored in local clones; use file:// instead.
+done.
+2026-04-04 00:33:36,108 [INFO] Results written to /tmp/drift-score-result-8701.json
+2026-04-04 00:33:36,108 [INFO] DriftScore: 0.2250
