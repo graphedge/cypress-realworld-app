@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Constitutional Drift Testing - Run Report Schema",
+  "description": "JSON schema for run-report.json produced by experiment_harness.sh",
+  "type": "object",
+  "required": [
+    "experiment_metadata",
+    "input_configuration",
+    "execution_summary",
+    "metrics",
+    "artifacts"
+  ],
+  "properties": {
+    "experiment_metadata": {
+      "type": "object",
+      "required": ["run_id", "arm", "run_number", "timestamp", "target_repo", "target_repo_commit"],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "pattern": "^(baseline|control|treatment)-\\d{3}$",
+          "description": "Format: {arm}-{number:03d}"
+        },
+        "arm": {
+          "type": "string",
+          "enum": ["baseline", "control", "treatment"]
+        },
+        "run_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "target_repo": {
+          "type": "string",
+          "description": "Repository name (e.g., cypress-realworld-app)"
+        },
+        "target_repo_commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{7,40}$",
+          "description": "Git commit SHA from cloned repository"
+        }
+      }
+    },
+    "input_configuration": {
+      "type": "object",
+      "required": ["rules_fixture", "fixture_sha256", "environment"],
+      "properties": {
+        "rules_fixture": {
+          "type": "string",
+          "enum": ["rules-baseline.xml", "rules-control.xml", "rules-treatment.xml"]
+        },
+        "fixture_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA256 hash of rules fixture file"
+        },
+        "agent_config_file": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "string",
+          "enum": ["isolated_clone"]
+        }
+      }
+    },
+    "execution_summary": {
+      "type": "object",
+      "required": ["status", "duration_seconds", "drift_engine_version"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["completed", "failed"]
+        },
+        "duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "drift_engine_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+        },
+        "drift_analytics_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+        },
+        "total_steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "steps_completed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["rule_count", "evidence_accuracy", "semantic_similarity", "drift_score"],
+      "properties": {
+        "rule_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_accuracy": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "semantic_similarity": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "drift_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Composite DriftScore = 0.50*(1-EvidenceAccuracy) + 0.30*(1-SemanticSimilarity) + 0.20*RuleCountNorm"
+        }
+      }
+    }
+  }
+}
