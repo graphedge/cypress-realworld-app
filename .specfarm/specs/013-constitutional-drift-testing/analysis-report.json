@@ -1,0 +1,73 @@
+{
+  "metadata": {
+    "artifact_dir": "/tmp/drift_artifacts/artifacts/drift-testing",
+    "timestamp": "2026-04-05T04:25:53.266746Z"
+  },
+  "arm_statistics": {
+    "baseline": {
+      "n": 5,
+      "drift_score_mean": 0.014431,
+      "drift_score_ci_95": [
+        0.014431,
+        0.014431
+      ],
+      "evidence_accuracy_mean": 0.984809,
+      "rule_count_mean": 0,
+      "raw_drift_scores": [
+        0.014431,
+        0.014431,
+        0.014431,
+        0.014431,
+        0.014431
+      ]
+    },
+    "control": {
+      "n": 5,
+      "drift_score_mean": 0.014431,
+      "drift_score_ci_95": [
+        0.014431,
+        0.014431
+      ],
+      "evidence_accuracy_mean": 0.984809,
+      "rule_count_mean": 0,
+      "raw_drift_scores": [
+        0.014431,
+        0.014431,
+        0.014431,
+        0.014431,
+        0.014431
+      ]
+    },
+    "treatment": {
+      "n": 5,
+      "drift_score_mean": 0.014431,
+      "drift_score_ci_95": [
+        0.014431,
+        0.014431
+      ],
+      "evidence_accuracy_mean": 0.984809,
+      "rule_count_mean": 0,
+      "raw_drift_scores": [
+        0.014431,
+        0.014431,
+        0.014431,
+        0.014431,
+        0.014431
+      ]
+    }
+  },
+  "comparison": {
+    "control_vs_treatment": {
+      "t_statistic": 0.0,
+      "p_value": 1.0,
+      "significant_at_0_05": false,
+      "percent_reduction": 0.0
+    }
+  },
+  "success_criteria": {
+    "sc_001_treatment_reduces_drift_by_20_pct": false,
+    "sc_002_treatment_evidence_accuracy_gte_0_95": true,
+    "sc_003_difference_significant_at_p_0_05": false,
+    "sc_004_all_runs_complete": true
+  }
+}
