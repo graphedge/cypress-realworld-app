@@ -1,0 +1,23 @@
+{
+  "experiment_metadata": {
+    "arm": "treatment",
+    "run_number": 3,
+    "repo_path": "/tmp/drift-treatment-r3-76308",
+    "rules_fixture": "rules-treatment.xml",
+    "start_time": "2026-04-05T04:53:03Z",
+    "duration_seconds": 4
+  },
+  "metrics": {
+    "drift_score": 0.071755,
+    "rule_count": 19,
+    "gathered_rule_count": 0,
+    "evidence_accuracy": 0.930140,
+    "semantic_similarity": 0.883584,
+    "rule_count_norm": 0.009500
+  },
+  "artifacts": {
+    "logs": "logs.txt",
+    "gathered_rules": "gathered-rules.md",
+    "agent_config": "agent-config.json"
+  }
+}

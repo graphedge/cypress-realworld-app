@@ -1,0 +1,23 @@
+{
+  "experiment_metadata": {
+    "arm": "control",
+    "run_number": 5,
+    "repo_path": "/tmp/drift-control-r5-76308",
+    "rules_fixture": "rules-control.xml",
+    "start_time": "2026-04-05T04:52:43Z",
+    "duration_seconds": 7
+  },
+  "metrics": {
+    "drift_score": 0.021197,
+    "rule_count": 19,
+    "gathered_rule_count": 0,
+    "evidence_accuracy": 0.974395,
+    "semantic_similarity": 0.978353,
+    "rule_count_norm": 0.009500
+  },
+  "artifacts": {
+    "logs": "logs.txt",
+    "gathered_rules": "gathered-rules.md",
+    "agent_config": "agent-config.json"
+  }
+}

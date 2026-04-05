@@ -1,72 +1,72 @@
 {
   "metadata": {
-    "artifact_dir": "/tmp/drift_artifacts/artifacts/drift-testing",
-    "timestamp": "2026-04-05T04:25:53.266746Z"
+    "artifact_dir": "artifacts/drift-testing",
+    "timestamp": "2026-04-05T04:54:14.729986Z"
   },
   "arm_statistics": {
     "baseline": {
       "n": 5,
-      "drift_score_mean": 0.014431,
+      "drift_score_mean": 0.088662,
       "drift_score_ci_95": [
-        0.014431,
-        0.014431
+        0.053815,
+        0.123509
       ],
-      "evidence_accuracy_mean": 0.984809,
+      "evidence_accuracy_mean": 0.913113,
       "rule_count_mean": 0,
       "raw_drift_scores": [
-        0.014431,
-        0.014431,
-        0.014431,
-        0.014431,
-        0.014431
+        0.148287,
+        0.085329,
+        0.036307,
+        0.088558,
+        0.084829
       ]
     },
     "control": {
       "n": 5,
-      "drift_score_mean": 0.014431,
+      "drift_score_mean": 0.069034,
       "drift_score_ci_95": [
-        0.014431,
-        0.014431
+        0.031587,
+        0.106481
       ],
-      "evidence_accuracy_mean": 0.984809,
-      "rule_count_mean": 0,
+      "evidence_accuracy_mean": 0.906954,
+      "rule_count_mean": 19,
       "raw_drift_scores": [
-        0.014431,
-        0.014431,
-        0.014431,
-        0.014431,
-        0.014431
+        0.129455,
+        0.040511,
+        0.062501,
+        0.091506,
+        0.021197
       ]
     },
     "treatment": {
       "n": 5,
-      "drift_score_mean": 0.014431,
+      "drift_score_mean": 0.111695,
       "drift_score_ci_95": [
-        0.014431,
-        0.014431
+        0.065412,
+        0.157978
       ],
-      "evidence_accuracy_mean": 0.984809,
-      "rule_count_mean": 0,
+      "evidence_accuracy_mean": 0.871587,
+      "rule_count_mean": 19,
       "raw_drift_scores": [
-        0.014431,
-        0.014431,
-        0.014431,
-        0.014431,
-        0.014431
+        0.086047,
+        0.14729,
+        0.071755,
+        0.186618,
+        0.066764
       ]
     }
   },
   "comparison": {
     "control_vs_treatment": {
-      "t_statistic": 0.0,
-      "p_value": 1.0,
+      "t_statistic": -1.4045,
+      "p_value": 0.199373,
       "significant_at_0_05": false,
-      "percent_reduction": 0.0
+      "percent_reduction": -61.8
     }
   },
   "success_criteria": {
     "sc_001_treatment_reduces_drift_by_20_pct": false,
-    "sc_002_treatment_evidence_accuracy_gte_0_95": true,
+    "sc_002_treatment_evidence_accuracy_gte_0_95": false,
     "sc_003_difference_significant_at_p_0_05": false,
     "sc_004_all_runs_complete": true
   }

@@ -1,0 +1,23 @@
+{
+  "experiment_metadata": {
+    "arm": "baseline",
+    "run_number": 3,
+    "repo_path": "/tmp/drift-baseline-r3-76308",
+    "rules_fixture": "rules-baseline.xml",
+    "start_time": "2026-04-05T04:52:05Z",
+    "duration_seconds": 4
+  },
+  "metrics": {
+    "drift_score": 0.036307,
+    "rule_count": 0,
+    "gathered_rule_count": 0,
+    "evidence_accuracy": 0.932439,
+    "semantic_similarity": 0.991578,
+    "rule_count_norm": 0.000000
+  },
+  "artifacts": {
+    "logs": "logs.txt",
+    "gathered_rules": "gathered-rules.md",
+    "agent_config": "agent-config.json"
+  }
+}
