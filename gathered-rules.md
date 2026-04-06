@@ -1,6 +1,6 @@
 # Rules Gathering Report — cypress-realworld-app
 
-**Generated**: 2026-03-31T23:22:11Z
+**Generated**: 2026-04-05T04:43:44Z
 **Repository**: /home/brett/projects/cypress-realworld-app
 **Commit Range**: HEAD~10..HEAD
 **Maximum Rules**: 20
@@ -13,7 +13,7 @@
 ### Environment
 - **Project**: cypress-realworld-app
 - **Git Repository**: /home/brett/projects/cypress-realworld-app
-- **Branch**: speckit/comprehensive-documentation
+- **Branch**: 013-constitutional-drift-testing
 - **Schema**: rules-schema.xsd
 
 ### Scan Configuration
@@ -45,7 +45,7 @@
 #### Test Files Found
   
   [0;32m===[0m [0;34mLocating Test Files[0m [0;32m===[0m
-    [0;32m[✓][0m Found 171 test files (exhaustive scan)
+    [0;32m[✓][0m Found 175 test files (exhaustive scan)
   /home/brett/projects/cypress-realworld-app/cypress/tests/ui/transaction-view.spec.ts
   /home/brett/projects/cypress-realworld-app/cypress/tests/ui/new-transaction.spec.ts
   /home/brett/projects/cypress-realworld-app/cypress/tests/ui/notifications.spec.ts
@@ -64,7 +64,7 @@
   /home/brett/projects/cypress-realworld-app/.specfarm/templates/payroll/plan.md
   /home/brett/projects/cypress-realworld-app/.specfarm/templates/api/spec.md
   /home/brett/projects/cypress-realworld-app/.specfarm/templates/api/plan.md
-  /home/brett/projects/cypress-realworld-app/.specfarm/specs/011-test-1st-customer-repo/spec.md
+  /home/brett/projects/cypress-realworld-app/.specfarm/specs/013-constitutional-drift-testing/spec.md
 
 #### Rule Candidates Extracted
 ```
@@ -133,8 +133,8 @@ Add generated rules to your project's `rules.xml` file (or equivalent).
 
 ## Report Metadata
 
-- **Scan Date**: 2026-03-31
-- **Scan Time**: 23:22:12 UTC
+- **Scan Date**: 2026-04-05
+- **Scan Time**: 04:43:46 UTC
 - **Report File**: /home/brett/projects/cypress-realworld-app/gathered-rules.md
 - **Schema File**: /home/brett/projects/cypress-realworld-app/rules-schema.xsd
 

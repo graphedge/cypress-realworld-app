@@ -121,23 +121,10 @@ echo "$GATHERED_RULES" > "$OUTPUT_DIR/gathered-rules.md"
 # ---- Calculate Metrics ----
 log_msg "Computing drift metrics..."
 
-# Count rules from the *fixture* (what was injected) — these are the rules being tested
-FIXTURE_RULE_COUNT=$(grep -c "<rule " "$RULES_FIXTURE" 2>/dev/null || true)
-FIXTURE_RULE_COUNT="${FIXTURE_RULE_COUNT:-0}"
-# Also count gathered rules from agent output (may differ from fixture)
-GATHERED_RULE_COUNT=$(echo "$GATHERED_RULES" | grep -c "^### " || true)
-GATHERED_RULE_COUNT="${GATHERED_RULE_COUNT:-0}"
-# Use the fixture count as the primary rule count for DriftScore
-RULE_COUNT=$FIXTURE_RULE_COUNT
-
-# Seed awk rand() with nanosecond time + PID + run number for per-run variation
-# Strip leading zeros from nanoseconds to prevent bash octal interpretation
-_NS=$(date +%N 2>/dev/null | sed 's/^0*//' || date +%s)
-_NS="${_NS:-1}"
-SEED=$(( _NS + $$ + RUN_NUM * 97 ))
-EVIDENCE_ACCURACY=$(awk -v seed="$SEED" "BEGIN {srand(seed); printf \"%.6f\", rand() * 0.2 + 0.80}")
-SEMANTIC_SIMILARITY=$(awk -v seed="$(( SEED + 31337 ))" "BEGIN {srand(seed); printf \"%.6f\", rand() * 0.3 + 0.70}")
-RULE_COUNT_NORM=$(awk -v count="$RULE_COUNT" "BEGIN {printf \"%.6f\", (count > 2000 ? 1.0 : count / 2000)}")
+RULE_COUNT=$(echo "$GATHERED_RULES" | grep -c "^### " || echo 0)
+EVIDENCE_ACCURACY=$(awk "BEGIN {print rand() * 0.2 + 0.80}")  # Mock: 0.80–1.00
+SEMANTIC_SIMILARITY=$(awk "BEGIN {print rand() * 0.3 + 0.70}")  # Mock: 0.70–1.00
+RULE_COUNT_NORM=$(awk -v count="$RULE_COUNT" "BEGIN {print (count > 2000 ? 1.0 : count / 2000)}")
 
 # DriftScore = 0.50 * (1.0 - EvidenceAccuracy) + 0.30 * (1.0 - SemanticSimilarity) + 0.20 * RuleCountNorm
 DRIFT_SCORE=$(awk -v ea="$EVIDENCE_ACCURACY" -v ss="$SEMANTIC_SIMILARITY" -v rc="$RULE_COUNT_NORM" \
@@ -146,7 +133,7 @@ DRIFT_SCORE=$(awk -v ea="$EVIDENCE_ACCURACY" -v ss="$SEMANTIC_SIMILARITY" -v rc=
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
-log_msg "Run complete. DriftScore=$DRIFT_SCORE, FixtureRules=$RULE_COUNT, GatheredRules=$GATHERED_RULE_COUNT, EvidenceAccuracy=$EVIDENCE_ACCURACY"
+log_msg "Run complete. DriftScore=$DRIFT_SCORE, Rules=$RULE_COUNT, EvidenceAccuracy=$EVIDENCE_ACCURACY"
 
 # ---- Generate Run Report ----
 log_msg "Generating run-report.json..."
@@ -163,7 +150,6 @@ cat > "$OUTPUT_DIR/run-report.json" <<EOF
   "metrics": {
     "drift_score": $DRIFT_SCORE,
     "rule_count": $RULE_COUNT,
-    "gathered_rule_count": $GATHERED_RULE_COUNT,
     "evidence_accuracy": $EVIDENCE_ACCURACY,
     "semantic_similarity": $SEMANTIC_SIMILARITY,
     "rule_count_norm": $RULE_COUNT_NORM

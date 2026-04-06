@@ -75,6 +75,16 @@ SCHEDULED_MODE=false
 MARKDOWN_MODE=false
 XML_MODE=false
 
+# FR-017: --from-constitution flag
+FROM_CONSTITUTION_MODE=false
+CONSTITUTION_PATH="${CONSTITUTION_PATH:-.specify/memory/constitution.md}"
+
+# FR-018: --append flag (write to rules.xml in place)
+APPEND_MODE=false
+
+# FR-019: --from-tests alongside --xml
+FROM_TESTS_XML_MODE=false
+
 # Colors
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -162,8 +172,29 @@ parse_args() {
                 shift
                 ;;
             --xml)
-                # Placeholder for existing mode (per plan.md)
+                # FR-016: XML mode (fixed dead-code bug)
                 XML_MODE=true
+                shift
+                ;;
+            --from-constitution)
+                # FR-017: extract rules from constitution markdown
+                FROM_CONSTITUTION_MODE=true
+                if [[ -n "${2:-}" && "${2:-}" != --* ]]; then
+                    CONSTITUTION_PATH="$2"
+                    shift 2
+                else
+                    shift
+                fi
+                ;;
+            --from-tests)
+                # FR-019: extract XML candidates from test files
+                FROM_TESTS_XML_MODE=true
+                SCAN_TESTS_MODE=true
+                shift
+                ;;
+            --append)
+                # FR-018: append generated rules to rules.xml in place
+                APPEND_MODE=true
                 shift
                 ;;
             -h|--help)
@@ -1094,9 +1125,10 @@ generate_xml_template() {
     local title="$2"
     local description="$3"
     local source_file="$4"
-    
+    local category="${5:-generated}"
+
     cat << EOF
-  <rule id="${rule_id}" enabled="true" severity="warn" phase="post-analysis" category="generated">
+  <rule id="${rule_id}" enabled="true" severity="warn" phase="post-analysis" category="${category}">
     <name>${title}</name>
     <description>${description}</description>
     <scope>global</scope>
@@ -1110,8 +1142,231 @@ EOF
 }
 
 # ============================================================================
-# Report Generation
+# XML Report Generation (FR-016, FR-017, FR-018, FR-019, FR-020)
 # ============================================================================
+
+# Check if a rule ID already exists in rules.xml (for deduplication, FR-018/FR-020)
+rule_id_exists_in_xml() {
+    local rule_id="$1"
+    local xml_file="${2:-$RULES_XML_PATH}"
+    [[ -f "$xml_file" ]] || return 1
+    "$XMLLINT_CMD" --xpath "//*[local-name()='rule'][@id='${rule_id}']" "$xml_file" 2>/dev/null | grep -q "rule" && return 0
+    return 1
+}
+
+# Slugify a string to a valid rule ID segment (lowercase, hyphens, no specials)
+slugify_rule_id() {
+    echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//'
+}
+
+# FR-017: Extract rule candidates from a constitution markdown file.
+# Finds section headings (##/###) followed by MUST/SHALL/MUST NOT language.
+# Emits: rule_id TAB title TAB description TAB source_file
+extract_constitution_rules() {
+    local const_file="${1:-$CONSTITUTION_PATH}"
+    [[ -f "$const_file" ]] || { log_warn "Constitution file not found: $const_file"; return 0; }
+
+    local current_section=""
+    local current_slug=""
+    local section_lines=""
+    local section_num=0
+
+    while IFS= read -r line; do
+        # New section heading (## or ###, skip # and ####+ )
+        if echo "$line" | grep -qE '^#{2,3} '; then
+            # Emit previous section if it had MUST/SHALL content
+            if [[ -n "$current_section" && -n "$section_lines" ]]; then
+                local must_line
+                must_line=$(echo "$section_lines" | grep -iE '\bMUST\b|\bSHALL\b' | head -1 | sed 's/^[[:space:]]*//')
+                if [[ -n "$must_line" ]]; then
+                    local rule_id="const-${current_slug}"
+                    printf '%s\t%s\t%s\t%s\n' \
+                        "$rule_id" \
+                        "$current_section" \
+                        "$must_line" \
+                        "$const_file"
+                fi
+            fi
+            # Start new section
+            current_section=$(echo "$line" | sed 's/^#*[[:space:]]*//')
+            current_slug=$(slugify_rule_id "$current_section")
+            # Append section number to ensure uniqueness when slug collides
+            section_num=$((section_num + 1))
+            [[ "$section_num" -gt 1 ]] && current_slug="${current_slug}-${section_num}" || true
+            section_lines=""
+        else
+            section_lines="${section_lines}
+${line}"
+        fi
+    done < "$const_file"
+
+    # Emit final section
+    if [[ -n "$current_section" && -n "$section_lines" ]]; then
+        local must_line
+        must_line=$(echo "$section_lines" | grep -iE '\bMUST\b|\bSHALL\b' | head -1 | sed 's/^[[:space:]]*//')
+        if [[ -n "$must_line" ]]; then
+            local rule_id="const-${current_slug}"
+            printf '%s\t%s\t%s\t%s\n' \
+                "$rule_id" \
+                "$current_section" \
+                "$must_line" \
+                "$const_file"
+        fi
+    fi
+}
+
+# FR-019: Extract XML rule candidates from test files (test-derived category)
+extract_test_derived_rules() {
+    local prefix="${RULE_PREFIX:-test}"
+    local count=0
+    find_test_files 2>/dev/null | while read -r test_file; do
+        [[ -n "$test_file" ]] || continue
+        # Extract test function names and MUST/SHALL comments near them
+        grep -n -E "^(t[0-9]+_[a-z_]+|function t[0-9]+)" "$test_file" 2>/dev/null | head -5 | while IFS=: read -r lineno func_line; do
+            local func_name
+            func_name=$(echo "$func_line" | grep -oE 't[0-9]+_[a-z_]+' | head -1)
+            [[ -n "$func_name" ]] || continue
+            # Look for MUST comment in surrounding lines
+            local context
+            context=$(sed -n "$((lineno > 3 ? lineno - 3 : 1)),$((lineno + 2))p" "$test_file" 2>/dev/null \
+                | grep -iE '\bMUST\b|\bSHALL\b|# Rule\|# rule' | head -1 | sed 's/^[[:space:]#]*//')
+            local title
+            title=$(echo "$func_name" | sed 's/_/ /g; s/t[0-9]* //')
+            local rule_id="${prefix}-$(slugify_rule_id "$func_name")"
+            local desc="${context:-Enforces: $(echo "$func_name" | sed 's/_/ /g')}"
+            printf '%s\t%s\t%s\t%s\n' "$rule_id" "$title" "$desc" "$test_file"
+        done
+    done
+}
+
+# FR-016 / FR-020: Generate a well-formed XML document of rule candidates.
+# Sources: commit analysis candidates, optionally constitution (FR-017), optionally tests (FR-019).
+# Writes to OUTPUT_FILE. Deduplicates against RULES_XML_PATH.
+generate_xml_report() {
+    log_section "Generating XML Rule Candidates"
+
+    local tmpbody
+    tmpbody=$(mktemp)
+
+    # Source 1: constitution rules (FR-017)
+    if [[ "$FROM_CONSTITUTION_MODE" == "true" ]]; then
+        log_info "Extracting rules from constitution: $CONSTITUTION_PATH"
+        local _const_candidates
+        _const_candidates=$(extract_constitution_rules "$CONSTITUTION_PATH")
+        while IFS=$'\t' read -r rule_id title desc source; do
+            [[ -n "$rule_id" ]] || continue
+            if rule_id_exists_in_xml "$rule_id"; then
+                log_info "Skipping duplicate: $rule_id"
+                continue
+            fi
+            generate_xml_template "$rule_id" "$title" "$desc" "$source" "constitution-derived" >> "$tmpbody"
+        done <<< "$_const_candidates"
+    fi
+
+    # Source 2: test-derived rules (FR-019)
+    if [[ "$FROM_TESTS_XML_MODE" == "true" ]]; then
+        log_info "Extracting rules from test files..."
+        local _raw_candidates
+        _raw_candidates=$(extract_test_derived_rules)
+        while IFS=$'\t' read -r rule_id title desc source; do
+            [[ -n "$rule_id" ]] || continue
+            if rule_id_exists_in_xml "$rule_id"; then
+                log_info "Skipping duplicate: $rule_id"
+                continue
+            fi
+            generate_xml_template "$rule_id" "$title" "$desc" "$source" "test-derived" >> "$tmpbody"
+        done <<< "$_raw_candidates"
+    fi
+
+    # Source 3: commit-analysis candidates (always included in xml mode)
+    if [[ "$FROM_CONSTITUTION_MODE" != "true" && "$FROM_TESTS_XML_MODE" != "true" ]]; then
+        log_info "Extracting rules from commit analysis..."
+        extract_rule_candidates 2>/dev/null | grep -v '^$' | head -"${MAX_RULES}" | while IFS= read -r candidate; do
+            local slug
+            slug=$(echo "$candidate" | cut -c1-40 | slugify_rule_id 2>/dev/null || echo "auto-$(date +%s)")
+            local rule_id="${RULE_PREFIX:-gen}-${slug}"
+            if rule_id_exists_in_xml "$rule_id"; then continue; fi
+            generate_xml_template "$rule_id" "$(echo "$candidate" | cut -c1-60)" "$candidate" "${REPO_ROOT}" "generated" >> "$tmpbody"
+        done
+    fi
+
+    # Wrap in XML document (FR-020)
+    {
+        echo '<?xml version="1.0" encoding="UTF-8"?>'
+        echo "<!-- Generated by gather-rules-agent $(date -u +%Y-%m-%dT%H:%M:%SZ) -->"
+        echo "<!-- Source: ${REPO_ROOT} -->"
+        echo '<rules xmlns="http://specfarm.example.org/rules" version="1.0">'
+        cat "$tmpbody"
+        echo '</rules>'
+    } > "${OUTPUT_FILE}"
+
+    rm -f "$tmpbody"
+    log_done "XML candidates written to: ${OUTPUT_FILE}"
+}
+
+# FR-018: Append generated rules into rules.xml before </rules>.
+# Deduplicates: skips rule IDs already present.
+append_rules_to_xml() {
+    local rules_file="${RULES_XML_PATH}"
+    [[ -f "$rules_file" ]] || { log_error "Cannot append: rules.xml not found at $rules_file"; return 1; }
+
+    local tmpbody
+    tmpbody=$(mktemp)
+
+    # Collect new rules from same sources as generate_xml_report
+    if [[ "$FROM_CONSTITUTION_MODE" == "true" ]]; then
+        local _const_raw
+        _const_raw=$(extract_constitution_rules "$CONSTITUTION_PATH")
+        while IFS=$'\t' read -r rule_id title desc source; do
+            [[ -n "$rule_id" ]] || continue
+            if rule_id_exists_in_xml "$rule_id" "$rules_file"; then
+                log_info "Skipping existing: $rule_id"
+                continue
+            fi
+            generate_xml_template "$rule_id" "$title" "$desc" "$source" "constitution-derived" >> "$tmpbody"
+        done <<< "$_const_raw"
+    fi
+
+    if [[ "$FROM_TESTS_XML_MODE" == "true" ]]; then
+        local _tests_raw
+        _tests_raw=$(extract_test_derived_rules)
+        while IFS=$'\t' read -r rule_id title desc source; do
+            [[ -n "$rule_id" ]] || continue
+            if rule_id_exists_in_xml "$rule_id" "$rules_file"; then
+                log_info "Skipping existing: $rule_id"
+                continue
+            fi
+            generate_xml_template "$rule_id" "$title" "$desc" "$source" "test-derived" >> "$tmpbody"
+        done <<< "$_tests_raw"
+    fi
+
+    if [[ ! -s "$tmpbody" ]]; then
+        log_info "No new rules to append (all candidates already exist in rules.xml)"
+        rm -f "$tmpbody"
+        return 0
+    fi
+
+    # Insert new rules before closing </rules> tag
+    local tmpxml
+    tmpxml=$(mktemp)
+    sed "s|</rules>|$(cat "$tmpbody" | sed 's/[&/\]/\\&/g; s/$/\\n/' | tr -d '\n')\n</rules>|" \
+        "$rules_file" > "$tmpxml"
+
+    # Validate the result is still XML-parseable
+    if "$XMLLINT_CMD" --noout "$tmpxml" 2>/dev/null; then
+        mv "$tmpxml" "$rules_file"
+        log_done "Appended new rules to: $rules_file"
+    else
+        log_error "XML validation failed after append — rules.xml unchanged"
+        rm -f "$tmpxml"
+        rm -f "$tmpbody"
+        return 1
+    fi
+
+    rm -f "$tmpbody"
+}
+
+
 
 generate_markdown_report() {
     local project_name=$(detect_project_name)
@@ -1323,6 +1578,38 @@ BANNER
     
     # Validate environment
     validate_environment || exit 1
+
+    # FR-016: XML mode — generate XML rule candidates (fixes dead-code bug)
+    if [[ "$XML_MODE" == "true" ]]; then
+        # For XML mode, run test discovery if requested but skip full pipeline
+        if [[ "$FROM_TESTS_XML_MODE" == "true" || "$FROM_CONSTITUTION_MODE" == "true" ]]; then
+            [[ "$FROM_TESTS_XML_MODE" == "true" ]] && { find_test_files > /dev/null; }
+        else
+            # Standard xml mode: run commit analysis to get candidates
+            init_commit_cache_if_needed
+            scan_recent_commits
+            extract_changed_files > /dev/null
+            find_test_files > /dev/null
+            find_spec_files > /dev/null
+            extract_rule_candidates > /dev/null
+        fi
+
+        if [[ "$APPEND_MODE" == "true" ]]; then
+            # FR-018: append to rules.xml in place
+            append_rules_to_xml
+        else
+            # FR-020: write XML document to OUTPUT_FILE
+            generate_xml_report
+        fi
+
+        log_section "✓ Execution Complete"
+        if [[ "$APPEND_MODE" == "true" ]]; then
+            log_done "Rules appended to: ${RULES_XML_PATH}"
+        else
+            log_done "XML candidates written to: ${OUTPUT_FILE}"
+        fi
+        return 0
+    fi
 
     # T037: Auto-default --scan-tests when rule_count < param * test_count
     # Parameter SCAN_TESTS_PARAM controls aggressiveness (default: 1)
