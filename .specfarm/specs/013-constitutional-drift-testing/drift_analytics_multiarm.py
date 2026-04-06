@@ -165,10 +165,10 @@ class DriftAnalyzer:
             
             self.analysis_results['comparison'] = {
                 'control_vs_treatment': {
-                    't_statistic': round(float(t_stat), 4),
-                    'p_value': round(float(p_value), 6),
-                    'significant_at_0_05': bool(p_value < 0.05),
-                    'percent_reduction': round(float(pct_reduction), 2)
+                    't_statistic': round(t_stat, 4),
+                    'p_value': round(p_value, 6),
+                    'significant_at_0_05': p_value < 0.05,
+                    'percent_reduction': round(pct_reduction, 2)
                 }
             }
             self.log(f"Welch's t-test: t={t_stat:.4f}, p={p_value:.6f}, reduction={pct_reduction:.2f}%")
