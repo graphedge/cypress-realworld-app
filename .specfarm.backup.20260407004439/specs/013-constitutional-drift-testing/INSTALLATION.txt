@@ -1,0 +1,150 @@
+================================================================================
+                   INSTALLING SPEC-013 EXPERIMENT IN ANOTHER REPO
+================================================================================
+
+STEP-BY-STEP INSTRUCTIONS
+
+1. COPY FILES
+   ===========
+   From: /home/brett/projects/specfarm2/specs/013-constitutional-drift-testing/
+   To:   <target-repo>/spec-013-experiment/
+
+   Commands:
+   ---------
+   cd /path/to/target-repo
+   mkdir -p spec-013-experiment
+   cp /home/brett/projects/specfarm2/specs/013-constitutional-drift-testing/{experiment_harness.sh,drift_analytics_multiarm.py,run_full_drift_experiment.sh,_EXPERIMENT_README.txt,EXPERIMENT_QUICKSTART.md,COPY_TO_OTHER_REPO.md} spec-013-experiment/
+   cp -r /home/brett/projects/specfarm2/specs/013-constitutional-drift-testing/fixtures spec-013-experiment/
+
+   What you should have:
+   ---------------------
+   spec-013-experiment/
+   ├── experiment_harness.sh          (executable)
+   ├── drift_analytics_multiarm.py    (executable)
+   ├── run_full_drift_experiment.sh   (executable)
+   ├── _EXPERIMENT_README.txt         (documentation)
+   ├── EXPERIMENT_QUICKSTART.md       (documentation)
+   ├── COPY_TO_OTHER_REPO.md          (documentation)
+   └── fixtures/
+       ├── rules-baseline.xml         (empty rules)
+       ├── rules-control.xml          (production rules)
+       └── rules-treatment.xml        (constitutional rules)
+
+2. PREPARE TARGET REPOSITORY
+   ===========================
+   The experiment needs a clean target repo with SpecFarm installed.
+
+   Commands:
+   ---------
+   cd /path/to/target-repo
+   git clone <your-target-repo-url> target-repo-clean
+   cd target-repo-clean
+
+   # Install SpecFarm if not already present
+   bash /home/brett/projects/specfarm2/scripts/install-specfarm.sh --target . --yes
+
+   # Verify installation
+   ls -la .specfarm/src/drift/drift_engine.sh
+   ls -la .specfarm/agents/gather-rules-agent.sh
+
+3. RUN THE EXPERIMENT
+   ===================
+   Commands:
+   ---------
+   cd /path/to/target-repo/spec-013-experiment
+   ./run_full_drift_experiment.sh ../target-repo-clean
+
+   Expected output:
+   • artifacts/drift-testing/baseline/run-1..5/
+   • artifacts/drift-testing/control/run-1..5/
+   • artifacts/drift-testing/treatment/run-1..5/
+   • artifacts/drift-testing/../analysis-report.json
+
+   Timing:
+   • ~30–90 minutes (5 min per run × 15 runs)
+   • Analysis: ~10 seconds
+
+4. REVIEW RESULTS
+   ================
+   Commands:
+   ---------
+   # View full statistical analysis
+   cat artifacts/drift-testing/../analysis-report.json | jq .
+
+   # View summary
+   cat artifacts/drift-testing/../analysis-report.json | jq .success_criteria
+
+   # Check specific arm results
+   cat artifacts/drift-testing/../analysis-report.json | jq '.arm_statistics.treatment'
+
+5. INTERPRET SUCCESS CRITERIA
+   ==============================
+   In analysis-report.json, look for:
+
+   success_criteria: {
+     "sc_001_treatment_reduces_drift_by_20_pct": true/false,
+     "sc_002_treatment_evidence_accuracy_gte_0_95": true/false,
+     "sc_003_difference_significant_at_p_0_05": true/false,
+     "sc_004_all_runs_complete": true/false
+   }
+
+   All four should be true for successful validation.
+
+TROUBLESHOOTING
+   =============
+
+   Q: "experiment_harness.sh: command not found"
+   A: Make sure you're in the spec-013-experiment directory and use:
+      bash experiment_harness.sh --repo ... (not just experiment_harness.sh)
+
+   Q: "No such file or directory: target-repo-clean"
+   A: Make sure you created the target repo:
+      git clone <url> target-repo-clean
+
+   Q: "gather-rules-agent.sh: No such file or directory"
+   A: SpecFarm wasn't properly installed. Re-run:
+      bash /path/to/specfarm/scripts/install-specfarm.sh --target target-repo-clean --yes
+
+   Q: "Python: No module named scipy"
+   A: Install scipy:
+      pip install scipy
+      (or: pip3 install scipy)
+
+   Q: "json.decoder.JSONDecodeError"
+   A: Some run-report.json files are malformed. Check:
+      jq . artifacts/drift-testing/baseline/run-1/run-report.json
+      cat artifacts/drift-testing/baseline/run-1/logs.txt
+
+MANUAL RUN (if you don't want to use run_full_drift_experiment.sh)
+   ================================================================
+
+   # Single run (baseline, run 1)
+   bash experiment_harness.sh \
+     --repo target-repo-clean \
+     --arm baseline \
+     --run 1 \
+     --rules fixtures/rules-baseline.xml \
+     --output artifacts/drift-testing/baseline/run-1
+
+   # View results
+   cat artifacts/drift-testing/baseline/run-1/run-report.json
+
+   # Manual analysis (after all 15 runs)
+   python3 drift_analytics_multiarm.py \
+     --artifact-dir artifacts/drift-testing \
+     --output analysis-report.json
+
+NEXT STEPS AFTER SUCCESSFUL RUN
+   ================================
+
+   1. Archive the results
+   2. Document the target repo and SpecFarm versions used
+   3. Compare results with other experiments
+   4. Plan Phase 4 improvements based on success criteria validation
+
+For detailed information, see:
+• _EXPERIMENT_README.txt (overview)
+• EXPERIMENT_QUICKSTART.md (detailed examples)
+• COPY_TO_OTHER_REPO.md (step-by-step)
+
+================================================================================

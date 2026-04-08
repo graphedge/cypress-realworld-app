@@ -29,6 +29,30 @@ You are an expert technical writer and project manager. Your task is to generate
    - **For doc-heavy subjects**: Estimate pseudocode structure from documentation when actual code is sparse
    - **This section is the highest-value technical artifact—always include it even if other sections must be trimmed**
 
+## Shell Safety Requirements (when generating via bash helper):
+
+Any bash helper script that writes the briefing output MUST follow these safety rules (per briefer-tweak.md):
+
+- **Strict mode**: Add `set -euo pipefail` near the top to abort on errors and unset variables.
+- **Repo-root anchor**: Resolve `repo_root` via `git rev-parse --show-toplevel` and set `outdir` relative to it to avoid accidental writes in the wrong location.
+- **Variable expansion**: Use `<<EOF` (unquoted) — not `<<'EOF'` — so `${NUMTOKENS}` and `${focus_sanitized}` expand in the output file.
+- **mktemp guard**: Check mktemp exit status immediately:
+  ```bash
+  tmp="$(mktemp "${outdir}/.brief.${NUMTOKENS}.XXXXXX")" || { echo "mktemp failed" >&2; exit 5; }
+  ```
+- **Input sanitization**: Collapse invalid characters and trim leading/trailing dots/hyphens from focus:
+  ```bash
+  focus_sanitized="$(printf '%s' "${focus_raw}" | sed -E 's/[^A-Za-z0-9._-]+/-/g' | sed -E 's/^[._-]+|[._-]+$//g')"
+  ```
+- **Token bounds check**: Validate `NUMTOKENS` is in range 1–20000:
+  ```bash
+  if [ "${NUMTOKENS}" -lt 1 ] || [ "${NUMTOKENS}" -gt 20000 ]; then echo "token count out of bounds: ${NUMTOKENS}" >&2; exit 2; fi
+  ```
+- **Atomic write**: Write to a temp file then `mv -f` to the final path:
+  ```bash
+  mv -f "${tmp}" "${outfile}" || { rm -f "${tmp}"; echo "Failed to move ${tmp} -> ${outfile}" >&2; exit 4; }
+  ```
+
 ## Filtering rules:
 - Keep prose focused; exclude raw .xml dumps, long stubs, // TODO blocks, or large compute examples unless they illustrate strategy.
 - If RepoMix is available: use it to prune respecting .gitignore + project patterns.

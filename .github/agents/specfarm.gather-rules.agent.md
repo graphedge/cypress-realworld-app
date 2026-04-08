@@ -1,4 +1,5 @@
 ---
+# THIS IS NOT PROJECT WORK — IGNORE IN SPEC WRITING. Agent infrastructure files should not be included in feature specifications or code analysis.
 description: Gather rules from recent commits using GitHub Actions context (automated rules discovery for policy enforcement). Enhanced Post-PR14 with confidence scoring and test pattern analysis.
 model: claude-haiku-4.5
 handoffs: 

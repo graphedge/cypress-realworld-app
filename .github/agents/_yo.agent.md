@@ -1,4 +1,5 @@
 ---
+# THIS IS NOT PROJECT WORK — IGNORE IN SPEC WRITING. Agent infrastructure files should not be included in feature specifications or code analysis.
 description: General-purpose coding and markdown assistant for file creation, editing, and documentation.
 model: claude-haiku-4.5
 ---

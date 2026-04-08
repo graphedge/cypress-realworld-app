@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://specfarm.example.org/rules"
+           xmlns="http://specfarm.example.org/rules"
+           elementFormDefault="qualified"
+           version="2.0">
+
+  <xs:annotation>
+    <xs:documentation>
+      SpecFarm Master Rules Schema (Phase 2+).
+
+      Evolution from Phase 1:
+      - Enhanced severity levels for nuanced enforcement (suggest to escalate).
+      - Added 'vibe' and 'phase' attributes to support SpecFarm's interaction model and roadmap.
+      - Introduced structured 'condition' sub-elements (pattern, exists, absent) while maintaining string fallback.
+      - Added mandatory 'scope' for targeted drift detection (scoped drift).
+      - Hardened 'parameters' with required flags and typed defaults.
+
+      This schema supports self-dogfooding by allowing SpecFarm to enforce its own architectural
+      and stylistic rules across different phases of growth.
+    </xs:documentation>
+  </xs:annotation>
+
+  <!-- Severity level progression for SpecFarm's enforcement lifecycle -->
+  <xs:simpleType name="SeverityType">
+    <xs:restriction base="xs:string">
+      <!-- Advisory nudge, minimal drift impact -->
+      <xs:enumeration value="suggest"/>
+      <!-- Standard warning, visible in drift table -->
+      <xs:enumeration value="warn"/>
+      <!-- Strong enforcement, expected to be justified if ignored -->
+      <xs:enumeration value="enforce"/>
+      <!-- Critical violation, intended to block pre-commit/merge -->
+      <xs:enumeration value="block"/>
+      <!-- Immediate escalation required (e.g. security or core architecture) -->
+      <xs:enumeration value="escalate"/>
+
+      <!-- Backward compatibility with Phase 1 -->
+      <xs:enumeration value="low"/>
+      <xs:enumeration value="medium"/>
+      <xs:enumeration value="high"/>
+      <xs:enumeration value="critical"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Interaction vibes to match SpecFarm's personality engine -->
+  <xs:simpleType name="VibeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="farm"/>
+      <xs:enumeration value="garden"/>
+      <xs:enumeration value="factory"/>
+      <xs:enumeration value="strict-engineer"/>
+      <xs:enumeration value="friendly-farmer"/>
+      <xs:enumeration value="plain"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Technical types for structured conditions -->
+  <xs:simpleType name="PatternType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="glob"/>
+      <xs:enumeration value="xpath"/>
+      <xs:enumeration value="regex"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Standard enforcement actions -->
+  <xs:simpleType name="ActionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="log"/>
+      <xs:enumeration value="notify"/>
+      <xs:enumeration value="fail-build"/>
+      <xs:enumeration value="suggest-fix"/>
+      <xs:enumeration value="custom"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Parameter data types for robust rule configuration -->
+  <xs:simpleType name="ParamDataType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="string"/>
+      <xs:enumeration value="number"/>
+      <xs:enumeration value="boolean"/>
+      <xs:enumeration value="xpath"/>
+      <xs:enumeration value="glob"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Root element definition -->
+  <xs:element name="rules">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="rule" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="name" type="xs:string">
+                <xs:annotation>
+                  <xs:documentation>Human-readable name of the rule.</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+
+              <xs:element name="description" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                  <xs:documentation>Detailed explanation of the rule's intent and rationale.</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+
+              <xs:element name="scope" type="xs:string" minOccurs="1" maxOccurs="unbounded">
+                <xs:annotation>
+                  <xs:documentation>
+                    The target area for the rule. Use prefixes for smart scoping:
+                    - "global": Entire project.
+                    - "directory:path/to/dir": Specific folder.
+                    - "file:*.extension": Specific file types.
+                    - "tag:custom-tag": Rules tagged with specific metadata.
+                  </xs:documentation>
+                </xs:annotation>
+              </xs:element>
+
+              <xs:element name="condition">
+                <xs:annotation>
+                  <xs:documentation>
+                    The logic that triggers a drift violation. Can be a simple string
+                    or a combination of structured patterns and existence checks.
+                  </xs:documentation>
+                </xs:annotation>
+                <xs:complexType mixed="true">
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="pattern">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="type" type="PatternType" use="required"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="exists" type="xs:string">
+                      <xs:annotation>
+                        <xs:documentation>Path that must exist for compliance.</xs:documentation>
+                      </xs:annotation>
+                    </xs:element>
+                    <xs:element name="absent" type="xs:string">
+                      <xs:annotation>
+                        <xs:documentation>Path that must be absent for compliance.</xs:documentation>
+                      </xs:annotation>
+                    </xs:element>
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+
+              <xs:element name="action" minOccurs="0">
+                <xs:annotation>
+                  <xs:documentation>
+                    Defines what happens when drift is detected.
+                  </xs:documentation>
+                </xs:annotation>
+                <xs:complexType mixed="true">
+                  <xs:attribute name="type" type="ActionType" use="optional" default="log"/>
+                </xs:complexType>
+              </xs:element>
+
+              <xs:element name="parameters" minOccurs="0">
+                <xs:annotation>
+                  <xs:documentation>Custom key-value parameters to tune rule behavior.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="param" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:attribute name="name" type="xs:string" use="required"/>
+                        <xs:attribute name="type" type="ParamDataType" use="optional" default="string"/>
+                        <xs:attribute name="value" type="xs:string" use="optional"/>
+                        <xs:attribute name="required" type="xs:boolean" use="optional" default="false"/>
+                        <xs:attribute name="default" type="xs:string" use="optional"/>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+
+              <xs:element name="metadata" minOccurs="0">
+                <xs:annotation>
+                  <xs:documentation>Extensible container for arbitrary XML metadata.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType mixed="true">
+                  <xs:sequence>
+                    <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+
+            <xs:attribute name="id" type="xs:ID" use="required"/>
+            <xs:attribute name="enabled" type="xs:boolean" use="optional" default="true"/>
+            <xs:attribute name="severity" type="SeverityType" use="optional" default="warn"/>
+            <xs:attribute name="vibe" type="VibeType" use="optional" default="plain"/>
+            <xs:attribute name="phase" type="xs:string" use="optional" default="2"/>
+            <xs:attribute name="category" type="xs:string" use="optional"/>
+            <xs:attribute name="doc" type="xs:anyURI" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="optional" default="2.0"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

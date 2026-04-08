@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- rules-baseline.xml — Empty rules fixture for baseline arm
+     Purpose: Baseline arm for drift testing (zero rules)
+     This fixture contains no rules and represents the null case.
+     Baseline arm answers: "What is the natural drift when gathering rules from zero rules?"
+-->
+<ruleset>
+  <metadata>
+    <name>Baseline Rules (Empty)</name>
+    <description>Empty rules fixture for baseline experimental arm</description>
+    <version>1.0</version>
+    <created>2026-04-05</created>
+    <arm>baseline</arm>
+  </metadata>
+  <rules>
+    <!-- No rules in baseline fixture -->
+  </rules>
+</ruleset>

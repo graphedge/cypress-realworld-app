@@ -1,0 +1,181 @@
+================================================================================
+                 SPEC-013 EXPERIMENT FILES — COMPLETE INDEX
+================================================================================
+
+QUICK REFERENCE:
+  Use in other repo? → START WITH: INSTALLATION.txt
+  New to experiments? → START WITH: _EXPERIMENT_README.txt
+  Want examples? → START WITH: EXPERIMENT_QUICKSTART.md
+
+================================================================================
+                            EXECUTABLE SCRIPTS
+================================================================================
+
+experiment_harness.sh (5.2 KB) ✓ Executable
+  ├─ Purpose: Run a single drift testing experiment for one arm
+  ├─ Language: Bash (POSIX)
+  ├─ Input: --repo <path> --arm <baseline|control|treatment> --run <N> 
+  │          --rules <fixture.xml> --output <dir>
+  ├─ Output: run-report.json, gathered-rules.md, logs.txt, agent-config.json
+  ├─ Typical Runtime: 2–5 minutes per run
+  └─ Example: bash experiment_harness.sh --repo ~/proj --arm baseline --run 1 ...
+
+run_full_drift_experiment.sh (4.1 KB) ✓ Executable
+  ├─ Purpose: Orchestrate all 15 experiments (5 per arm) automatically
+  ├─ Language: Bash (POSIX)
+  ├─ Input: <target-repo-path> [output-dir]
+  ├─ Output: artifacts/drift-testing/ with all runs + analysis-report.json
+  ├─ Features: Creates fresh clones, auto-analysis, progress tracking
+  ├─ Typical Runtime: 30–90 minutes (full experiment)
+  └─ Example: ./run_full_drift_experiment.sh ~/target-repo
+
+drift_analytics_multiarm.py (12 KB) ✓ Executable
+  ├─ Purpose: Statistical analysis across arms (Welch's t-test, CI, success criteria)
+  ├─ Language: Python 3.7+
+  ├─ Input: --artifact-dir <path> [--output <file>] [--verbose]
+  ├─ Output: analysis-report.json + human-readable console summary
+  ├─ Features: Means, 95% CI, t-test, success criteria validation
+  ├─ Requirements: scipy (pip install scipy)
+  ├─ Typical Runtime: ~10 seconds
+  └─ Example: python3 drift_analytics_multiarm.py --artifact-dir artifacts/drift-testing
+
+================================================================================
+                          DOCUMENTATION FILES
+================================================================================
+
+INSTALLATION.txt (5.2 KB) ⭐ START HERE IF USING IN ANOTHER REPO
+  ├─ What it is: Complete step-by-step installation guide
+  ├─ Contains: Copy commands, prerequisites, troubleshooting
+  ├─ When to use: First time setting up in another repo
+  └─ Read time: 5 minutes
+
+_EXPERIMENT_README.txt (5.0 KB) ⭐ START HERE FOR OVERVIEW
+  ├─ What it is: Overview, quick start, and quick reference
+  ├─ Contains: File descriptions, design, expected output, requirements
+  ├─ When to use: First time understanding the experiment
+  └─ Read time: 10 minutes
+
+EXPERIMENT_QUICKSTART.md (5.6 KB) FOR DETAILED EXAMPLES
+  ├─ What it is: Detailed walkthrough with examples and troubleshooting
+  ├─ Contains: Running single/full experiments, analyzing results, error handling
+  ├─ When to use: Need concrete examples and debugging help
+  └─ Read time: 15 minutes
+
+COPY_TO_OTHER_REPO.md (3.9 KB) FOR COPY PROCEDURES
+  ├─ What it is: Step-by-step guide for copying to another repo
+  ├─ Contains: Copy commands, folder structure, workflow
+  ├─ When to use: Understanding exactly what to copy
+  └─ Read time: 8 minutes
+
+spec.md (5.6 KB) FOR FORMAL SPECIFICATION
+  ├─ What it is: Formal specification with requirements and design
+  ├─ Contains: Requirements (FR-001–FR-007), design, success criteria, runbook
+  ├─ When to use: Need full technical details or formal reference
+  └─ Read time: 20 minutes (skim: 5 minutes)
+
+FILES_INDEX.txt (this file)
+  ├─ What it is: Complete index and file reference
+  ├─ Contains: All files with descriptions and purposes
+
+================================================================================
+                          RULE FIXTURES (3 ARMS)
+================================================================================
+
+fixtures/rules-baseline.xml (642 B)
+  ├─ Arm: baseline
+  ├─ Description: Empty rules fixture (null case)
+  ├─ Rules Count: 0
+  ├─ Purpose: Measure natural drift when starting from zero
+  └─ Use for: Baseline arm in experiment
+
+fixtures/rules-control.xml (15 KB)
+  ├─ Arm: control
+  ├─ Description: Current production rules
+  ├─ Rules Count: 19 (extracted from gather-rules agent)
+  ├─ Purpose: Measure drift with standard rule gathering
+  └─ Use for: Control arm in experiment
+
+fixtures/rules-treatment.xml (15 KB)
+  ├─ Arm: treatment
+  ├─ Description: Constitutional core + production rules
+  ├─ Rules Count: 19 (constitutional rules injected)
+  ├─ Purpose: Measure drift with constitutional rules injection
+  └─ Use for: Treatment arm in experiment
+
+================================================================================
+                        RECOMMENDED READING ORDER
+================================================================================
+
+SCENARIO 1: First-time user
+  1. INSTALLATION.txt (setup guide)
+  2. _EXPERIMENT_README.txt (understand the experiment)
+  3. EXPERIMENT_QUICKSTART.md (run through examples)
+
+SCENARIO 2: Just need to copy and run
+  1. INSTALLATION.txt (step-by-step)
+  2. FILES_INDEX.txt (this file, as reference)
+
+SCENARIO 3: Need technical details
+  1. spec.md (formal specification)
+  2. EXPERIMENT_QUICKSTART.md (detailed examples)
+  3. INSTALLATION.txt (setup)
+
+SCENARIO 4: Troubleshooting
+  1. EXPERIMENT_QUICKSTART.md (troubleshooting section)
+  2. INSTALLATION.txt (common errors)
+  3. spec.md (requirements/design for context)
+
+================================================================================
+                         TYPICAL WORKFLOW
+================================================================================
+
+Step 1: Prepare
+  1. Copy all files to another repo (use INSTALLATION.txt)
+  2. Clone target repo and install SpecFarm
+  3. Verify .specfarm/src/drift/drift_engine.sh exists
+
+Step 2: Run
+  1. Run: ./run_full_drift_experiment.sh ../target-repo
+  2. Monitor progress (15 experiments, 5 per arm)
+  3. Wait for completion (~30–90 minutes)
+
+Step 3: Analyze
+  1. Python auto-generates analysis-report.json
+  2. Review success criteria (SC-001 through SC-004)
+  3. Compare results
+
+Step 4: Interpret
+  1. Check if treatment reduces drift ≥20% (SC-001)
+  2. Check if treatment accuracy ≥0.95 (SC-002)
+  3. Check if difference is significant p<0.05 (SC-003)
+  4. Check all runs completed (SC-004)
+
+================================================================================
+                        FILE SIZE SUMMARY
+================================================================================
+
+Executable Scripts:     ~21 KB total
+Documentation:         ~25 KB total
+Rule Fixtures:         ~31 KB total
+Directory:             TOTAL ~76 KB
+
+All files are self-contained and ready to copy.
+
+================================================================================
+                     GETTING HELP
+================================================================================
+
+Read more:
+  • spec.md — Full specification and design
+  • EXPERIMENT_QUICKSTART.md — Examples and troubleshooting
+
+Common errors:
+  • "command not found" → use bash experiment_harness.sh (not ./...)
+  • "No such file" → verify SpecFarm installed with .specfarm/src/drift/
+  • "JSON decode error" → check logs.txt in run directory
+
+Success:
+  • All 4 success criteria should be ✓ PASS
+  • analysis-report.json validates the hypothesis
+
+================================================================================

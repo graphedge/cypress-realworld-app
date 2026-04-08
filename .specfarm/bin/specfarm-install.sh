@@ -260,7 +260,7 @@ show_changes() {
     # New files
     local new_files
     new_files=$(cd "$source" && find . -type f | while read -r f; do
-        [[ ! -f "$target/$f" ]] && echo "  + $f"
+        if [[ ! -f "$target/$f" ]]; then echo "  + $f"; fi
     done)
 
     # Modified files
@@ -276,7 +276,7 @@ show_changes() {
     # Deleted files (in target but not in source)
     local deleted_files
     deleted_files=$(cd "$target" && find . -type f | while read -r f; do
-        [[ ! -f "$source/$f" ]] && echo "  - $f"
+        if [[ ! -f "$source/$f" ]]; then echo "  - $f"; fi
     done)
 
     if [[ -n "$new_files" ]]; then
@@ -296,6 +296,125 @@ show_changes() {
 
     if [[ -z "$new_files" && -z "$modified_files" && -z "$deleted_files" ]]; then
         echo "  No changes detected."
+    fi
+}
+
+################################################################################
+# Agent-protection: guarded-block injection
+################################################################################
+
+# Content injected into root-level agent instruction files
+_specfarm_block_content() {
+    cat << 'BLOCK'
+## SpecFarm Infrastructure — DO NOT MODIFY `.specfarm/`
+
+The `.specfarm/` directory in this repository is **SpecFarm-managed infrastructure**.
+AI coding agents MUST NOT add, modify, delete, or reorganize files inside `.specfarm/`.
+
+All changes to `.specfarm/` are managed exclusively by the SpecFarm install script:
+  `.specfarm/bin/specfarm-install.sh --target <this-repo>`
+
+BLOCK
+}
+
+# Inject (or replace) a guarded block in a file. POSIX-compliant.
+# Usage: inject_guarded_block <file>
+inject_guarded_block() {
+    local file="$1"
+    local begin_marker="<!-- BEGIN: SpecFarm-managed — do not edit this block -->"
+    local end_marker="<!-- END: SpecFarm-managed -->"
+
+    local block
+    block="$(printf '%s\n' "$begin_marker")"$'\n'"$(_specfarm_block_content)"$'\n'"$(printf '%s\n' "$end_marker")"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        if [[ ! -f "$file" ]]; then
+            log_info "[DRY-RUN] Would create with SpecFarm block: $file"
+        elif grep -qF "$begin_marker" "$file" 2>/dev/null; then
+            log_info "[DRY-RUN] Would update SpecFarm block in: $file"
+        else
+            log_info "[DRY-RUN] Would append SpecFarm block to: $file"
+        fi
+        return 0
+    fi
+
+    local dir
+    dir="$(dirname "$file")"
+    [[ -d "$dir" ]] || mkdir -p "$dir"
+
+    if [[ ! -f "$file" ]]; then
+        # File does not exist — create with block only
+        printf '%s\n' "$block" > "$file"
+        log_success "Created with SpecFarm block: $file"
+        return 0
+    fi
+
+    if grep -qF "$begin_marker" "$file" 2>/dev/null; then
+        # Block already present — replace in-place using a temp file (POSIX-safe)
+        local tmp
+        tmp="$(mktemp)"
+        awk -v begin="$begin_marker" -v end="$end_marker" -v block="$block" '
+            $0 == begin { in_block=1; print block; next }
+            in_block && $0 == end { in_block=0; next }
+            in_block { next }
+            { print }
+        ' "$file" > "$tmp" && mv "$tmp" "$file"
+        log_success "Updated SpecFarm block in: $file"
+    else
+        # File exists but no block — append
+        printf '\n%s\n' "$block" >> "$file"
+        log_success "Appended SpecFarm block to: $file"
+    fi
+}
+
+install_agent_protection() {
+    log_info "Installing agent-protection files..."
+
+    # Root-level agent instruction files that get guarded-block injection
+    local root_files=(
+        "$TARGET_PATH/.github/copilot-instructions.md"
+        "$TARGET_PATH/CLAUDE.md"
+        "$TARGET_PATH/AGENTS.md"
+        "$TARGET_PATH/GEMINI.md"
+        "$TARGET_PATH/.cursorrules"
+        "$TARGET_PATH/.windsurfrules"
+    )
+
+    for f in "${root_files[@]}"; do
+        inject_guarded_block "$f"
+    done
+
+    if [[ "$DRY_RUN" != "true" ]]; then
+        log_success "Agent-protection blocks installed in root-level files"
+    fi
+}
+
+################################################################################
+# Extra-file detection and logging
+################################################################################
+
+log_extra_files() {
+    local source_dir="$1"
+    local target_dir="$2"
+    local label="$3"   # e.g. ".specfarm/" for display
+
+    [[ -d "$target_dir" ]] || return 0
+
+    local extra_found=false
+    while IFS= read -r -d '' tfile; do
+        local rel="${tfile#"$target_dir"/}"
+        if [[ ! -e "$source_dir/$rel" ]]; then
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_info "[DRY-RUN] Would remove extra file: $label$rel"
+            else
+                log_warn "Removing extra file: $label$rel"
+            fi
+            extra_found=true
+        fi
+    done < <(find "$target_dir" -type f -print0 2>/dev/null)
+
+    if [[ "$extra_found" == "true" && "$DRY_RUN" != "true" ]]; then
+        log_info "Extra files above were removed by fresh copy of $label"
     fi
 }
 
@@ -398,6 +517,30 @@ install_templates() {
     log_success "Copied .specfarm/templates/ to target"
 }
 
+install_schema_xsd() {
+    local source_xsd="$SPECFARM_ROOT/rules-schema.xsd"
+    local target_xsd="$TARGET_PATH/rules-schema.xsd"
+
+    if [[ ! -f "$source_xsd" ]]; then
+        log_warn "Source rules-schema.xsd not found at $source_xsd, skipping"
+        return 0
+    fi
+
+    log_info "Installing rules-schema.xsd to target..."
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would copy: $source_xsd → $target_xsd"
+        return 0
+    fi
+
+    cp "$source_xsd" "$target_xsd" || {
+        log_error "Failed to copy rules-schema.xsd"
+        exit 4
+    }
+
+    log_success "Copied rules-schema.xsd to target root"
+}
+
 ################################################################################
 # Post-install validation
 ################################################################################
@@ -488,10 +631,17 @@ main() {
         echo ""
     fi
 
+    # Report (and in dry-run, preview) any extra files that will be wiped
+    log_extra_files "$SPECFARM_ROOT/.specfarm" "$TARGET_PATH/.specfarm" ".specfarm/"
+    if [[ -d "$SPECFARM_ROOT/.github/agents" ]]; then
+        log_extra_files "$SPECFARM_ROOT/.github/agents" "$TARGET_PATH/.github/agents" ".github/agents/"
+    fi
+
     install_specfarm
     install_agents
     install_templates
-
+    install_schema_xsd
+    install_agent_protection
 
     if [[ "$DRY_RUN" != "true" ]]; then
         echo ""

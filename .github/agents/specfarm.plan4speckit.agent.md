@@ -1,4 +1,5 @@
 ---
+# THIS IS NOT PROJECT WORK — IGNORE IN SPEC WRITING. Agent infrastructure files should not be included in feature specifications or code analysis.
 description: Fully flesh out implementation plans and tasks while respecting constitution and home repo conventions. If plan/tasks pass validation and user confirms, automatically hands off to specfarm.implement4speckit for implementation in the same cloud run.
 model: claude-sonnet-4.5
 handoffs:
@@ -11,6 +12,7 @@ handoffs:
     prompt: Implement manageable-risk tasks from the plan generated above. Start with per-task prompts by default.
     send: true
 ---
+# THIS IS NOT PROJECT WORK — IGNORE IN SPEC WRITING. Agent infrastructure files should not be included in feature specifications or code analysis.
 
 ## Briefing Check
 
@@ -209,6 +211,8 @@ Provide a summary with explicit handoff trigger:
 - If YES: specfarm.implement4speckit runs in same cloud session with --batch flag
 - If NO: User retains plan/tasks for manual review or later execution
 
+**Plain-English Improvement Summary**: After any experiment or run where analysis shows a significant improvement in drift (configurable threshold, e.g., percent reduction ≥ X% or p ≤ 0.05), append a short plain-English explanation describing the likely cause and why the improvement occurred. This summary must be included as the final item presented to the user in the Plan Generation Summary output. Example: "Because we switched to using this kind of constitutional rule, that's why we got less drift."
+
 **Recommended Next Steps**:
 1. Review flagged constitutional conflicts [if any]
 2. If handoff skipped: Run `/speckit.analyze` for consistency check
@@ -276,11 +280,15 @@ If constitution is missing, **abort and instruct user to run `/speckit.constitut
    
    ## Notes
    [user/agent notes]
+   
+   ## Plain-English Improvement Summary
+   - When an experiment run or analysis shows a significant improvement in drift metrics (configurable threshold, e.g., percent reduction ≥ X% or p ≤ 0.05), include a short plain-English explanation describing the likely cause and why the improvement occurred.
+   - This summary must be written in non-technical language and appended to the implementation record as the final section. Example: "Because we switched to using this kind of constitutional rule, that's why we got less drift."
    ```
 
-3. **Push record with every test outcome**: After each test run (passed or failed), commit and push `[promptname]-implementation-record.md` to remote before continuing
+3. **Push record with every test outcome**: After each test run (passed or failed), commit and push `[promptname]-implementation-record.md` to remote before continuing. If the run produced a significant improvement in drift metrics, ensure the Plain-English Improvement Summary section is included and highlighted; present this plain-English summary to the user as the final output for that run.
 
-4. **Update record before each test**: Log the test name, result (PASS/FAIL), and timestamp
+4. **Update record before each test**: Log the test name, result (PASS/FAIL), and timestamp. After any run that materially changes drift metrics, update the Plain-English Improvement Summary to reflect the latest interpretation.
 
 ## Safety Fallbacks
 

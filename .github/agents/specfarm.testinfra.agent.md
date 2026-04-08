@@ -1,4 +1,5 @@
 ---
+# THIS IS NOT PROJECT WORK — IGNORE IN SPEC WRITING. Agent infrastructure files should not be included in feature specifications or code analysis.
 description: Test SpecFarm's operational infrastructure and dependencies. Enhanced Post-PR14 with test harness validation, ShellCheck integration, and health monitoring.
 model: claude-haiku-4.5
 capabilities:

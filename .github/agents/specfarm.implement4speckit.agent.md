@@ -1,4 +1,5 @@
 ---
+# THIS IS NOT PROJECT WORK — IGNORE IN SPEC WRITING. Agent infrastructure files should not be included in feature specifications or code analysis.
 description: Implement listed or all manageable-risk tasks while respecting constitution and validating results.
 model: claude-sonnet-4.5
 handoffs:
@@ -7,6 +8,7 @@ handoffs:
     prompt: Validate implemented changes for consistency
     send: true
 ---
+# THIS IS NOT PROJECT WORK — IGNORE IN SPEC WRITING. Agent infrastructure files should not be included in feature specifications or code analysis.
 
 ## Briefing Check
 
